@@ -1,0 +1,50 @@
+Sub CopyMatchingColumns()
+    Dim wsSource As Worksheet, wsTarget As Worksheet
+    Dim lastRowSource As Long, lastColumnSource As Long
+    Dim lastRowTarget As Long, lastColumnTarget As Long
+    Dim sourceHeaders As Object
+    Dim targetHeaders As Object
+    Dim i As Integer, j As Integer
+    Dim srcCol As Integer, tgtCol As Integer
+    
+    ' Set source and target worksheets
+    Set wsSource = ThisWorkbook.Sheets("Sheet2") ' Source data
+    Set wsTarget = ThisWorkbook.Sheets("Template") ' Target sheet
+    
+    ' Find last used row and column in both sheets
+    lastRowSource = wsSource.Cells(Rows.Count, 1).End(xlUp).Row
+    lastColumnSource = wsSource.Cells(1, Columns.Count).End(xlToLeft).Column
+    lastRowTarget = wsTarget.Cells(Rows.Count, 1).End(xlUp).Row
+    lastColumnTarget = wsTarget.Cells(1, Columns.Count).End(xlToLeft).Column
+    
+    ' Create dictionary for headers
+    Set sourceHeaders = CreateObject("Scripting.Dictionary")
+    Set targetHeaders = CreateObject("Scripting.Dictionary")
+    
+    ' Read headers from Sheet2 (source)
+    For i = 1 To lastColumnSource
+        sourceHeaders(wsSource.Cells(1, i).Value) = i
+    Next i
+    
+    ' Read headers from Sheet1 (target)
+    For j = 1 To lastColumnTarget
+        targetHeaders(wsTarget.Cells(1, j).Value) = j
+    Next j
+    
+    ' Copy data only for matching headers
+    For Each key In targetHeaders.keys
+        If sourceHeaders.exists(key) Then
+            srcCol = sourceHeaders(key) ' Column number in Sheet2
+            tgtCol = targetHeaders(key) ' Column number in Sheet1
+            
+            ' Copy the entire column except the header
+            wsSource.Range(wsSource.Cells(2, srcCol), wsSource.Cells(lastRowSource, srcCol)).Copy
+            wsTarget.Cells(2, tgtCol).PasteSpecial Paste:=xlPasteValues
+        End If
+    Next key
+    
+    ' Clear clipboard
+    Application.CutCopyMode = False
+    
+    MsgBox "Matching data copied successfully!", vbInformation, "Success"
+End Sub
