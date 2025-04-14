@@ -1,0 +1,38 @@
+Sub RemoveRestrictedKeywords()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim keyword As String
+    Dim cellValue As String
+    
+    ' Set the active sheet
+    Set ws = ActiveSheet
+    
+    ' Find the last used row in column C
+    lastRow = ws.Cells(ws.Rows.Count, 3).End(xlUp).Row
+    
+    ' Loop through each row
+    For i = 2 To lastRow ' Assuming headers are in row 1
+        keyword = Trim(ws.Cells(i, 3).Value) ' Get keyword from column C
+        cellValue = ws.Cells(i, 2).Value ' Get description from column B
+        
+        ' If keyword exists in column C, remove it from column B (case-insensitive)
+        If keyword <> "" And cellValue <> "" Then
+            ws.Cells(i, 2).Value = ReplaceCaseInsensitive(cellValue, keyword, "")
+        End If
+    Next i
+    
+    MsgBox "Restricted keywords removed successfully!", vbInformation
+End Sub
+
+' Function to perform case-insensitive replacement
+Function ReplaceCaseInsensitive(ByVal text As String, ByVal findText As String, ByVal replaceText As String) As String
+    Dim regEx As Object
+    Set regEx = CreateObject("VBScript.RegExp")
+    
+    regEx.Pattern = "\b" & findText & "\b" ' Match whole word
+    regEx.IgnoreCase = True ' Case-insensitive
+    regEx.Global = True ' Replace all occurrences
+    
+    ReplaceCaseInsensitive = regEx.Replace(text, replaceText)
+End Function
