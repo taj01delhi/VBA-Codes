@@ -1,0 +1,29 @@
+Sub ConcatenateColumnA()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim result As String
+    Dim cell As Range
+
+    ' Set the worksheet (Active sheet or specify the sheet name)
+    Set ws = ActiveSheet
+
+    ' Find the last used row in column A
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Loop through each cell in column A and concatenate with ;
+    For Each cell In ws.Range("A1:A" & lastRow)
+        If cell.Value <> "" Then
+            result = result & cell.Value & ";"
+        End If
+    Next cell
+
+    ' Remove the trailing ; (if needed)
+    If Right(result, 1) = ";" Then
+        result = Left(result, Len(result) - 1)
+    End If
+
+    ' Output result in cell B1
+    ws.Range("B1").Value = result
+
+    MsgBox "Text concatenation completed successfully!", vbInformation, "Success"
+End Sub
