@@ -1,0 +1,20 @@
+Sub RemoveRejectedCandidates()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    
+    ' Set the worksheet (change "Sheet1" if your sheet has a different name)
+    Set ws = ThisWorkbook.Worksheets("Sheet1")
+    
+    ' Find the last row with data in column B
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    
+    ' Loop through rows from bottom to top
+    For i = lastRow To 2 Step -1 ' Start from row 2 to skip header
+        If ws.Cells(i, 2).Value = "rejected" Then
+            ws.Rows(i).Delete
+        End If
+    Next i
+    
+    MsgBox "Rejected candidates have been removed.", vbInformation
+End Sub
