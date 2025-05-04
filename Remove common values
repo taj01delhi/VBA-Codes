@@ -1,0 +1,70 @@
+Sub RemoveCommonValues()
+    Dim ws As Worksheet
+    Dim rngA As Range, rngB As Range
+    Dim cellA As Range, cellB As Range
+    Dim dict As Object
+    Dim arrA As Variant, arrB As Variant
+    Dim i As Integer, j As Integer
+    Dim newA As String, newB As String
+    
+    Set ws = ActiveSheet ' Change as needed
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+    ' Define the ranges
+    Set rngA = ws.Range("A1:A" & ws.Cells(Rows.Count, 1).End(xlUp).Row)
+    Set rngB = ws.Range("B1:B" & ws.Cells(Rows.Count, 2).End(xlUp).Row)
+    
+    ' Store values that appear in both columns
+    For Each cellA In rngA
+        If Not IsEmpty(cellA.Value) Then
+            arrA = Split(cellA.Value, ";")
+            For i = LBound(arrA) To UBound(arrA)
+                dict(Trim(arrA(i))) = False ' Mark as potential match
+            Next i
+        End If
+    Next cellA
+    
+    For Each cellB In rngB
+        If Not IsEmpty(cellB.Value) Then
+            arrB = Split(cellB.Value, ";")
+            For j = LBound(arrB) To UBound(arrB)
+                If dict.exists(Trim(arrB(j))) Then
+                    dict(Trim(arrB(j))) = True ' Confirm match exists in both columns
+                End If
+            Next j
+        End If
+    Next cellB
+    
+    ' Remove only common values and rebuild the list
+    For Each cellA In rngA
+        If Not IsEmpty(cellA.Value) Then
+            arrA = Split(cellA.Value, ";")
+            newA = ""
+            For i = LBound(arrA) To UBound(arrA)
+                If Not dict.exists(Trim(arrA(i))) Or dict(Trim(arrA(i))) = False Then
+                    newA = newA & Trim(arrA(i)) & ";"
+                End If
+            Next i
+            If Len(newA) > 0 Then newA = Left(newA, Len(newA) - 1)
+            cellA.Value = newA
+        End If
+    Next cellA
+    
+    For Each cellB In rngB
+        If Not IsEmpty(cellB.Value) Then
+            arrB = Split(cellB.Value, ";")
+            newB = ""
+            For j = LBound(arrB) To UBound(arrB)
+                If Not dict.exists(Trim(arrB(j))) Or dict(Trim(arrB(j))) = False Then
+                    newB = newB & Trim(arrB(j)) & ";"
+                End If
+            Next j
+            If Len(newB) > 0 Then newB = Left(newB, Len(newB) - 1)
+            cellB.Value = newB
+        End If
+    Next cellB
+    
+    ' Clean up
+    Set dict = Nothing
+    MsgBox "Common ASIN values removed successfully!", vbInformation
+End Sub
