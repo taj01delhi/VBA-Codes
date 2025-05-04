@@ -1,0 +1,34 @@
+Sub ExtractBulletPoints()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim rng As Range, cell As Range
+    Dim description As String
+    Dim sentences() As String
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Find the last row in column B (description column)
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    
+    ' Loop through each cell in the description column
+    For Each cell In ws.Range("B2:B" & lastRow)
+        description = cell.Value
+        
+        ' Remove "Description:" prefix if present
+        description = Replace(description, "Description:", "")
+        
+        ' Split the text into sentences using period as delimiter
+        sentences = Split(description, ".")
+        
+        ' Take the first 5 sentences or fewer if less available
+        Dim i As Integer
+        For i = 0 To Application.Min(UBound(sentences), 4)
+            If Trim(sentences(i)) <> "" Then
+                cell.Offset(0, i + 1).Value = Trim(sentences(i))
+            End If
+        Next i
+    Next cell
+    
+    MsgBox "Bullet points extracted into separate columns successfully!", vbInformation
+End Sub
