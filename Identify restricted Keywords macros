@@ -1,0 +1,48 @@
+Sub IdentifyKeywords()
+    Dim ws As Worksheet
+    Dim lastRowA As Long
+    Dim lastRowD As Long
+    Dim i As Long, j As Long
+    Dim keyword As String
+    Dim description As String
+    Dim result As String
+    
+    ' Set the worksheet (assumes the active sheet is correct)
+    Set ws = ActiveSheet
+    
+    ' Find the last row in column A (keywords)
+    lastRowA = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Find the last row in column D (descriptions)
+    lastRowD = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    
+    ' Loop through each row in column D (descriptions)
+    For j = 2 To lastRowD
+        description = ws.Cells(j, "D").Value ' Get the description
+        result = "" ' Initialize result as blank
+        
+        ' Loop through all keywords in column A
+        For i = 2 To lastRowA
+            keyword = ws.Cells(i, "A").Value ' Get the keyword
+            
+            ' Check if the keyword exists in the description (case-insensitive)
+            If InStr(1, description, keyword, vbTextCompare) > 0 Then
+                ' If a match is found, add the keyword to the result
+                If result = "" Then
+                    result = keyword
+                Else
+                    result = result & ", " & keyword ' Concatenate multiple keywords
+                End If
+            End If
+        Next i
+        
+        ' Write the matching keyword(s) in column E
+        If result <> "" Then
+            ws.Cells(j, "E").Value = result
+        Else
+            ws.Cells(j, "E").Value = "No Match"
+        End If
+    Next j
+    
+    MsgBox "Keyword identification completed! Results are in column E.", vbInformation
+End Sub
