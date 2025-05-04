@@ -1,0 +1,40 @@
+Sub ExtractMaterialWithLabel()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim cell As Range
+    Dim materialText As String
+    Dim startPos As Long
+    Dim endPos As Long
+
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change if your sheet has a different name
+
+    ' Find the last row in column B
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+
+    ' Loop through each cell in column B
+    For Each cell In ws.Range("B2:B" & lastRow)
+        materialText = "No Material Found" ' Default value
+
+        ' Look for "Material:" keyword
+        startPos = InStr(1, cell.Value, "Material:", vbTextCompare)
+        
+        ' If "Material:" is found
+        If startPos > 0 Then
+            startPos = startPos + Len("Material:") ' Move past "Material:"
+            endPos = InStr(startPos, cell.Value, "<") ' Find the next "<" tag or end of line
+            
+            ' Extract material text
+            If endPos > 0 Then
+                materialText = "Material: " & Trim(Mid(cell.Value, startPos, endPos - startPos))
+            Else
+                materialText = "Material: " & Trim(Mid(cell.Value, startPos))
+            End If
+        End If
+
+        ' Place extracted material in column C
+        ws.Cells(cell.Row, 3).Value = materialText
+    Next cell
+
+    MsgBox "Material extraction completed!", vbInformation
+End Sub
