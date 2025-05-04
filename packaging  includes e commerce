@@ -1,0 +1,42 @@
+Sub ExtractPackageIncludes()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim cell As Range
+    Dim packageText As String
+    Dim startPos As Long
+    Dim endPos As Long
+    Dim notePos As Long
+
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change if your sheet name is different
+
+    ' Find the last row in column B
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+
+    ' Loop through each cell in column B
+    For Each cell In ws.Range("B2:B" & lastRow)
+        packageText = "No Package Info" ' Default value
+
+        ' Extract Package Includes
+        startPos = InStr(1, cell.Value, "Package Includes:", vbTextCompare)
+        If startPos > 0 Then
+            startPos = startPos + Len("Package Includes:") ' Move past label
+            
+            ' Find "Note:" position if present
+            notePos = InStr(startPos, cell.Value, "Note:", vbTextCompare)
+            If notePos > 0 Then
+                endPos = notePos - 1 ' Stop at "Note:"
+            Else
+                endPos = Len(cell.Value) + 1 ' Otherwise, go till end
+            End If
+            
+            packageText = "Package Includes:" & Trim(Mid(cell.Value, startPos, endPos - startPos))
+        End If
+
+        ' Place extracted package details in column E
+        ws.Cells(cell.Row, 5).Value = packageText ' Column E for Package Includes
+    Next cell
+
+    MsgBox "Package Includes extraction completed!", vbInformation
+End Sub
+
