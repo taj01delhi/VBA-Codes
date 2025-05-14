@@ -1,0 +1,47 @@
+Sub MergeImageLinks_AllSheets()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim skuRow As Long
+    Dim currentSKU As String
+    Dim mergedLinks As String
+    Dim i As Long
+
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
+    For Each ws In ThisWorkbook.Sheets
+        lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        skuRow = 0
+        mergedLinks = ""
+
+        For i = 2 To lastRow
+            If ws.Cells(i, 1).Value <> "" Then
+                If skuRow > 0 Then
+                    ws.Cells(skuRow, 4).Value = mergedLinks
+                End If
+
+                skuRow = i
+                currentSKU = ws.Cells(i, 1).Value
+                mergedLinks = ws.Cells(i, 3).Value
+            Else
+                If ws.Cells(i, 3).Value <> "" Then
+                    If mergedLinks = "" Then
+                        mergedLinks = ws.Cells(i, 3).Value
+                    Else
+                        mergedLinks = mergedLinks & ", " & ws.Cells(i, 3).Value
+                    End If
+                End If
+            End If
+        Next i
+
+        If skuRow > 0 Then
+            ws.Cells(skuRow, 4).Value = mergedLinks
+        End If
+    Next ws
+
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+
+    MsgBox "Image links merged successfully!", vbInformation
+End Sub
+
