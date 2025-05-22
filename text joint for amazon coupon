@@ -1,12 +1,18 @@
 Sub GenerateTextJoins()
+    On Error GoTo ErrHandler
+
     Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets(1) ' Modify if using a different sheet
+    Set ws = ThisWorkbook.Sheets(1) ' Change if using a different sheet
 
     Dim lastRow As Long
-    lastRow = ws.Cells(ws.Rows.count, 1).End(xlUp).Row ' Finds last row in Column A
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    ' Clear old output and set header
+    ws.Columns(2).ClearContents
+    ws.Cells(1, 2).Value = "ASIN Batches" ' Add header in Row 1, Column B
 
     Dim batchSize As Long: batchSize = 2900
-    Dim outputRow As Long: outputRow = 1
+    Dim outputRow As Long: outputRow = 2 ' Start output from Row 2
     Dim result As String
     Dim count As Long: count = 0
     Dim i As Long
@@ -14,27 +20,28 @@ Sub GenerateTextJoins()
     For i = 1 To lastRow
         Dim asin As String
         asin = Trim(ws.Cells(i, 1).Value)
-        
-        ' Skip if ASIN is blank
+
         If asin <> "" Then
             result = result & asin & ";"
             count = count + 1
         End If
 
-        ' When batchSize reached, write to output
         If count = batchSize Then
-            ws.Cells(outputRow, 2).Value = Left(result, Len(result) - 1) ' Remove last semicolon
+            ws.Cells(outputRow, 2).Value = Left(result, Len(result) - 1) ' Remove trailing semicolon
             outputRow = outputRow + 1
             result = ""
             count = 0
         End If
     Next i
 
-    ' Write remaining if any left
+    ' Output any remaining ASINs
     If count > 0 Then
         ws.Cells(outputRow, 2).Value = Left(result, Len(result) - 1)
     End If
 
-    MsgBox "TEXTJOIN done. Check Column B.", vbInformation
-End Sub
+    MsgBox "TEXTJOIN done. Check Column B from Row 2.", vbInformation
+    Exit Sub
 
+ErrHandler:
+    MsgBox "An error occurred: " & Err.Description, vbExclamation
+End Sub
