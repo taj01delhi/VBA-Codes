@@ -1,0 +1,40 @@
+Sub ExtractColorWithLabel()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim cell As Range
+    Dim colorText As String
+    Dim startPos As Long
+    Dim endPos As Long
+
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change if your sheet name is different
+
+    ' Find the last row in column B
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+
+    ' Loop through each cell in column B
+    For Each cell In ws.Range("B2:B" & lastRow)
+        colorText = "No Color Found" ' Default value
+
+        ' Look for "Color:" keyword
+        startPos = InStr(1, cell.Value, "Color:", vbTextCompare)
+        
+        ' If "Color:" is found
+        If startPos > 0 Then
+            startPos = startPos + Len("Color:") ' Move past "Color:"
+            endPos = InStr(startPos, cell.Value, "<") ' Find the next "<" tag or end of line
+            
+            ' Extract color text
+            If endPos > 0 Then
+                colorText = "Color: " & Trim(Mid(cell.Value, startPos, endPos - startPos))
+            Else
+                colorText = "Color: " & Trim(Mid(cell.Value, startPos))
+            End If
+        End If
+
+        ' Place extracted color in column D
+        ws.Cells(cell.Row, 4).Value = colorText
+    Next cell
+
+    MsgBox "Color extraction completed!", vbInformation
+End Sub
