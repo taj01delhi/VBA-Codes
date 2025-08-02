@@ -1,0 +1,55 @@
+Sub DownloadAndFitImagesInCells()
+    Dim ws As Worksheet
+    Dim imgUrl As String
+    Dim localFile As String
+    Dim http As Object, stream As Object
+    Dim i As Long
+    Dim lastRow As Long
+    Dim pic As Shape
+    Dim cell As Range
+
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Delete existing images in column B to avoid overlap
+    Dim shp As Shape
+    For Each shp In ws.Shapes
+        If Not Intersect(shp.TopLeftCell, ws.Range("B2:B" & lastRow)) Is Nothing Then
+            shp.Delete
+        End If
+    Next shp
+
+    For i = 2 To lastRow
+        imgUrl = ws.Cells(i, "A").Value
+        Set cell = ws.Cells(i, "B")
+        If imgUrl <> "" Then
+            localFile = Environ$("TEMP") & "\img_" & i & ".jpg" ' temp file
+            Set http = CreateObject("MSXML2.XMLHTTP")
+            http.Open "GET", imgUrl, False
+            http.send
+
+            If http.Status = 200 Then
+                Set stream = CreateObject("ADODB.Stream")
+                stream.Type = 1
+                stream.Open
+                stream.Write http.responseBody
+                stream.SaveToFile localFile, 2
+                stream.Close
+
+                Set pic = ws.Shapes.AddPicture(localFile, _
+                    msoFalse, msoCTrue, _
+                    cell.Left, cell.Top, cell.Width, cell.Height)
+                With pic
+                    .LockAspectRatio = msoTrue
+                    If .Width > cell.Width Then .Width = cell.Width - 4
+                    If .Height > cell.Height Then .Height = cell.Height - 4
+                    .Left = cell.Left + (cell.Width - .Width) / 2
+                    .Top = cell.Top + (cell.Height - .Height) / 2
+                    .Placement = xlMoveAndSize
+                End With
+            Else
+                cell.Value = "Download failed"
+            End If
+        End If
+    Next i
+End Sub
