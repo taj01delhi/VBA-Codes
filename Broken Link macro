@@ -16,7 +16,7 @@ Sub FindBrokenHyperlinks()
     
     Set reportWs = Worksheets.Add
     reportWs.Name = "Broken Links Report"
-    reportWs.Range("A1:D1").Value = Array("Sheet Name", "Cell Address", "Hyperlink Text", "Broken Link")
+    reportWs.Range("A1:A").Value = Array("Sheet Name", "Cell Address", "Hyperlink Text", "Broken Link")
     reportRow = 2
     
     ' Create the XMLHTTP object to test web links
