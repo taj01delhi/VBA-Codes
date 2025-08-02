@@ -1,0 +1,79 @@
+Sub FindBrokenHyperlinks()
+    Dim ws As Worksheet
+    Dim hl As Hyperlink
+    Dim reportWs As Worksheet
+    Dim reportRow As Long
+    Dim httpReq As Object
+    Dim linkURL As String
+    Dim fileExists As Boolean
+    
+    ' Create or clear report sheet
+    On Error Resume Next
+    Application.DisplayAlerts = False
+    Worksheets("Broken Links Report").Delete
+    Application.DisplayAlerts = True
+    On Error GoTo 0
+    
+    Set reportWs = Worksheets.Add
+    reportWs.Name = "Broken Links Report"
+    reportWs.Range("A1:D1").Value = Array("Sheet Name", "Cell Address", "Hyperlink Text", "Broken Link")
+    reportRow = 2
+    
+    ' Create the XMLHTTP object to test web links
+    On Error Resume Next
+    Set httpReq = CreateObject("MSXML2.XMLHTTP")
+    On Error GoTo 0
+    
+    ' Loop through each worksheet and each hyperlink
+    For Each ws In ThisWorkbook.Worksheets
+        For Each hl In ws.Hyperlinks
+            linkURL = hl.Address
+            
+            ' Skip blank or invalid addresses
+            If Len(linkURL) > 0 Then
+                If LCase(Left(linkURL, 4)) = "http" Then
+                    ' Check HTTP status for web URL
+                    If Not httpReq Is Nothing Then
+                        On Error Resume Next
+                        httpReq.Open "HEAD", linkURL, False
+                        httpReq.send
+                        If Err.Number <> 0 Or httpReq.Status <> 200 Then
+                            ' Broken link - add to report
+                            reportWs.Cells(reportRow, 1).Value = ws.Name
+                            reportWs.Cells(reportRow, 2).Value = hl.Parent.Address(False, False)
+                            reportWs.Cells(reportRow, 3).Value = hl.TextToDisplay
+                            reportWs.Cells(reportRow, 4).Value = linkURL
+                            reportRow = reportRow + 1
+                        End If
+                        On Error GoTo 0
+                    End If
+                Else
+                    ' For file path links – check if file exists
+                    fileExists = False
+                    On Error Resume Next
+                    fileExists = (Dir(linkURL) <> "")
+                    On Error GoTo 0
+                    
+                    If Not fileExists Then
+                        ' Broken link - add to report
+                        reportWs.Cells(reportRow, 1).Value = ws.Name
+                        reportWs.Cells(reportRow, 2).Value = hl.Parent.Address(False, False)
+                        reportWs.Cells(reportRow, 3).Value = hl.TextToDisplay
+                        reportWs.Cells(reportRow, 4).Value = linkURL
+                        reportRow = reportRow + 1
+                    End If
+                End If
+            End If
+        Next hl
+    Next ws
+    
+    If reportRow = 2 Then
+        MsgBox "No broken hyperlinks found.", vbInformation
+        Application.DisplayAlerts = False
+        reportWs.Delete
+        Application.DisplayAlerts = True
+    Else
+        MsgBox "Broken hyperlinks report created in 'Broken Links Report' sheet.", vbInformation
+        reportWs.Columns("A:D").AutoFit
+    End If
+End Sub
