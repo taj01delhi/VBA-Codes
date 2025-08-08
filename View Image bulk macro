@@ -1,0 +1,65 @@
+Sub DownloadAndFitImagesInCells_MultiColumn()
+    Dim ws As Worksheet
+    Dim imgColumns As Variant, linkColumns As Variant
+    Dim lastRow As Long
+    Dim imgUrl As String, localFile As String
+    Dim http As Object, stream As Object
+    Dim i As Long, j As Long
+    Dim pic As Shape, cell As Range
+    Dim shp As Shape
+
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' List the source columns for links and their destination columns for images
+    linkColumns = Array("B", "D", "F") ' Columns containing URLs
+    imgColumns = Array("C", "E", "G")  ' Columns to insert images
+
+    ' Delete existing images in all intended columns
+    For j = LBound(imgColumns) To UBound(imgColumns)
+        For Each shp In ws.Shapes
+            If Not Intersect(shp.TopLeftCell, ws.Range(imgColumns(j) & "2:" & imgColumns(j) & lastRow)) Is Nothing Then
+                shp.Delete
+            End If
+        Next shp
+    Next j
+
+    ' Loop through each row and each link/image column pair
+    For i = 2 To lastRow
+        For j = LBound(linkColumns) To UBound(linkColumns)
+            imgUrl = ws.Cells(i, linkColumns(j)).Value
+            Set cell = ws.Cells(i, imgColumns(j))
+            If imgUrl <> "" Then
+                localFile = Environ$("TEMP") & "\img_" & linkColumns(j) & "_" & i & ".jpg" ' unique temp file
+                Set http = CreateObject("MSXML2.XMLHTTP")
+                http.Open "GET", imgUrl, False
+                http.send
+
+                If http.Status = 200 Then
+                    Set stream = CreateObject("ADODB.Stream")
+                    stream.Type = 1
+                    stream.Open
+                    stream.Write http.responseBody
+                    stream.SaveToFile localFile, 2
+                    stream.Close
+
+                    Set pic = ws.Shapes.AddPicture(localFile, _
+                        msoFalse, msoCTrue, _
+                        cell.Left, cell.Top, cell.Width, cell.Height)
+                    With pic
+                        .LockAspectRatio = msoTrue
+                        If .Width > cell.Width Then .Width = cell.Width - 4
+                        If .Height > cell.Height Then .Height = cell.Height - 4
+                        .Left = cell.Left + (cell.Width - .Width) / 2
+                        .Top = cell.Top + (cell.Height - .Height) / 2
+                        .Placement = xlMoveAndSize
+                    End With
+                Else
+                    cell.Value = "Download failed"
+                End If
+            End If
+        Next j
+    Next i
+End Sub
+
+
