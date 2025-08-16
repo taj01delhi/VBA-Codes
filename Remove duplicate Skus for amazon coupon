@@ -1,0 +1,47 @@
+Sub RemoveSKUsFromAllRows()
+    Dim ws As Worksheet
+    Set ws = ActiveSheet   ' You can also use ThisWorkbook.Sheets("Sheet1")
+
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Find last row in Col A
+    
+    Dim r As Long
+    Dim sA As String, sB As String
+    Dim arrA() As String, arrB() As String
+    Dim dictB As Object
+    Dim outputA As String
+    Dim i As Long
+
+    ' Loop through all rows
+    For r = 1 To lastRow
+        sA = ws.Cells(r, 1).Value    ' Column A SKUs (; separated)
+        sB = ws.Cells(r, 2).Value    ' Column B SKUs (, separated)
+        
+        If Len(sA) > 0 And Len(sB) > 0 Then
+            Set dictB = CreateObject("Scripting.Dictionary")
+            
+            ' Split A and B
+            arrA = Split(sA, ";")
+            arrB = Split(sB, ",")
+            
+            ' Build dictionary of SKUs in B
+            For i = LBound(arrB) To UBound(arrB)
+                dictB(Trim(arrB(i))) = 1
+            Next i
+            
+            outputA = ""
+            ' Keep only SKUs not in B
+            For i = LBound(arrA) To UBound(arrA)
+                If Not dictB.Exists(Trim(arrA(i))) Then
+                    If outputA <> "" Then outputA = outputA & ";"
+                    outputA = outputA & Trim(arrA(i))
+                End If
+            Next i
+            
+            ' Update column A
+            ws.Cells(r, 1).Value = outputA
+        End If
+    Next r
+    
+    MsgBox "SKUs in Column B removed from Column A for all rows!", vbInformation
+End Sub
