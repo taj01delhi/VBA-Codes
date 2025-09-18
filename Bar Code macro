@@ -1,0 +1,116 @@
+Option Explicit
+
+Sub InsertBarcodeInColumnC()
+    Dim ws As Worksheet: Set ws = ActiveSheet
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    If lastRow < 2 Then MsgBox "No UPCs in column B.", vbExclamation: Exit Sub
+    
+    Dim r As Long, upc As String, pname As String
+    Dim rawVal As Variant, rawS As String
+    Dim url As String, tmpFile As String, tmpFolder As String
+    Dim http As Object, stream As Object
+    Dim pic As Shape, txt As Shape, grp As Shape
+    Dim arr(1 To 2) As Variant
+    
+    tmpFolder = Environ("TEMP")
+    Application.ScreenUpdating = False
+    
+    For r = 2 To lastRow ' skip header row
+        ' --- read UPC from column B ---
+        rawVal = ws.Cells(r, "B").Value2
+        If IsError(rawVal) Or Trim(CStr(rawVal & "")) = "" Then GoTo NextRow
+        
+        If IsNumeric(rawVal) Then
+            rawS = Format(rawVal, "0")   ' avoid scientific notation
+        Else
+            rawS = CStr(rawVal)
+        End If
+        upc = OnlyDigits(rawS)
+        If Len(upc) = 11 Then upc = upc & UPC_CheckDigit(upc)
+        If Len(upc) <> 12 Then
+            ws.Cells(r, "C").Value = "Invalid UPC"
+            GoTo NextRow
+        End If
+        
+        pname = Trim(ws.Cells(r, "A").Text) ' product name from col A
+        
+        ' --- download UPC-A barcode image ---
+        url = "https://barcode.tec-it.com/barcode.ashx?data=" & upc & "&code=UPCA&imagetype=PNG&dpi=300"
+        tmpFile = tmpFolder & "\bc_" & r & ".png"
+        Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+        http.Open "GET", url, False
+        http.Send
+        If http.Status <> 200 Then
+            ws.Cells(r, "C").Value = "Download failed"
+            GoTo NextRow
+        End If
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1: stream.Open
+        stream.Write http.responseBody
+        stream.SaveToFile tmpFile, 2
+        stream.Close
+        
+        ' --- clear old shapes in column C cell ---
+        On Error Resume Next
+        Dim s As Shape
+        For Each s In ws.Shapes
+            If Abs(s.Top - ws.Cells(r, "C").Top) < 2 Then s.Delete
+        Next s
+        On Error GoTo 0
+        
+        ' --- insert barcode ---
+        Set pic = ws.Shapes.AddPicture(tmpFile, False, True, ws.Cells(r, "C").Left + 4, ws.Cells(r, "C").Top + 4, -1, -1)
+        pic.LockAspectRatio = msoTrue
+        pic.Width = ws.Cells(r, "C").Width - 8
+        
+        ' --- add product name below barcode ---
+        Set txt = ws.Shapes.AddTextbox(msoTextOrientationHorizontal, ws.Cells(r, "C").Left + 4, pic.Top + pic.Height + 2, pic.Width, 36)
+        With txt.TextFrame2
+            .TextRange.Text = pname
+            .HorizontalAnchor = msoAnchorCenter
+            .VerticalAnchor = msoAnchorMiddle
+            .TextRange.Font.Size = 32   ' product name size = 32
+            .TextRange.Font.Name = "Calibri"
+        End With
+        txt.Line.Visible = msoFalse: txt.Fill.Visible = msoFalse
+        
+        ' --- group them together ---
+        arr(1) = pic.Name: arr(2) = txt.Name
+        Set grp = ws.Shapes.Range(arr).Group
+        grp.Placement = 1 ' move & size with cells
+        grp.Left = ws.Cells(r, "C").Left + (ws.Cells(r, "C").Width - grp.Width) / 2
+        grp.Top = ws.Cells(r, "C").Top + 2
+        
+        ' adjust row height if needed
+        If grp.Height + 6 > ws.Rows(r).RowHeight Then ws.Rows(r).RowHeight = grp.Height + 6
+        
+        ' cleanup
+        On Error Resume Next: Kill tmpFile: On Error GoTo 0
+        
+NextRow:
+        Set http = Nothing: Set stream = Nothing
+    Next r
+    
+    Application.ScreenUpdating = True
+    MsgBox "Done. Barcodes with names placed in column C.", vbInformation
+End Sub
+
+' --- helpers ---
+Function OnlyDigits(s As String) As String
+    Dim i As Long, ch As String, out As String
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If ch Like "[0-9]" Then out = out & ch
+    Next i
+    OnlyDigits = out
+End Function
+
+Function UPC_CheckDigit(upc11 As String) As String
+    Dim i As Long, sumOdd As Long, sumEven As Long, d As Integer, tot As Long
+    For i = 1 To 11
+        d = CInt(Mid$(upc11, i, 1))
+        If (i Mod 2) = 1 Then sumOdd = sumOdd + d Else sumEven = sumEven + d
+    Next i
+    tot = sumOdd * 3 + sumEven
+    If tot Mod 10 = 0 Then UPC_CheckDigit = "0" Else UPC_CheckDigit = CStr(10 - (tot Mod 10))
+End Function
